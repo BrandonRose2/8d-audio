@@ -109,6 +109,7 @@ filter. A full-bandwidth master is a completely different experience.
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `8765` | Listen port. |
+| `HOST` | `127.0.0.1` | Bind address. Set a Tailscale IP for remote access. |
 | `EIGHTD_TOKEN` | unset | Shared secret. When set, every request needs `X-Access-Token` or `?t=`. |
 | `EIGHTD_MAX_UPLOAD_MB` | unset | Reject uploads above this size. |
 
@@ -138,7 +139,19 @@ docker run -p 8765:8765 -e EIGHTD_TOKEN=pick-a-long-secret \
 ```
 
 To keep full functionality *and* reach it remotely, expose the Mac instance over
-a private network (Tailscale) instead of deploying a copy.
+a private network instead of deploying a copy. With Tailscale, either
+
+```bash
+tailscale serve --bg 8765          # HTTPS on your tailnet, app stays on localhost
+```
+
+or bind the tailnet address directly:
+
+```bash
+EIGHTD_TOKEN=$(openssl rand -hex 24) HOST=$(tailscale ip -4) ./start
+```
+
+`start` refuses a non-localhost bind without a token unless you confirm.
 
 ## Credits
 

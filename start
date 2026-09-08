@@ -1,8 +1,27 @@
 #!/bin/bash
 # Launch the 8D Audio web app.
+#
+#   ./start                          localhost only (default)
+#   PORT=9000 ./start                different port
+#   HOST=100.x.y.z ./start           bind a Tailscale address for remote access
+#   EIGHTD_TOKEN=secret ./start      require a shared secret
 cd "$(dirname "$0")/app" || exit 1
 PORT="${PORT:-8765}"
-echo "8D Audio  →  http://127.0.0.1:$PORT"
+HOST="${HOST:-127.0.0.1}"
+
+if [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "localhost" ] && [ -z "$EIGHTD_TOKEN" ]; then
+  echo "WARNING: binding $HOST with no EIGHTD_TOKEN set."
+  echo "Anyone who can reach this address can upload files and use your CPU."
+  echo "Set a secret first:  EIGHTD_TOKEN=\$(openssl rand -hex 24) HOST=$HOST ./start"
+  echo
+  printf "Continue anyway? [y/N] "
+  read -r a; [ "$a" = "y" ] || [ "$a" = "Y" ] || exit 1
+fi
+
+echo "8D Audio  ->  http://$HOST:$PORT"
+[ -n "$EIGHTD_TOKEN" ] && echo "Token gate ON. Append ?t=\$EIGHTD_TOKEN to the URL."
 echo "Ctrl-C to stop."
-command -v open >/dev/null && (sleep 1.5; open "http://127.0.0.1:$PORT") &
-exec ../.venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port "$PORT"
+if [ "$HOST" = "127.0.0.1" ] && command -v open >/dev/null; then
+  (sleep 1.5; open "http://127.0.0.1:$PORT") &
+fi
+exec ../.venv/bin/python -m uvicorn server:app --host "$HOST" --port "$PORT"
