@@ -1,0 +1,29 @@
+# environment
+.venv/
+__pycache__/
+*.pyc
+
+# runtime data: uploads and renders
+app/jobs/
+
+# fetched at setup time, not redistributed here
+app/kemar.sofa
+
+# compiled artifacts, built by setup.sh
+app/bin/
+
+# local scratch and personal recordings - never commit media
+piano/
+*.wav
+*.mp3
+*.m4a
+*.mov
+*.mp4
+*.aiff
+*.flac
+*.raw
+*.sofa
+*.png
+.DS_Store
+make8d.py
+gen_demo.py

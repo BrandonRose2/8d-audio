@@ -1,0 +1,8 @@
+#!/bin/bash
+# Launch the 8D Audio web app.
+cd "$(dirname "$0")/app" || exit 1
+PORT="${PORT:-8765}"
+echo "8D Audio  →  http://127.0.0.1:$PORT"
+echo "Ctrl-C to stop."
+command -v open >/dev/null && (sleep 1.5; open "http://127.0.0.1:$PORT") &
+exec ../.venv/bin/python -m uvicorn server:app --host 127.0.0.1 --port "$PORT"

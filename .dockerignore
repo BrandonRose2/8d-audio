@@ -1,0 +1,11 @@
+.venv/
+app/jobs/
+app/bin/
+app/kemar.sofa
+piano/
+__pycache__/
+*.wav
+*.mp3
+*.mov
+*.m4a
+.git/

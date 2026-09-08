@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8D Audio</title>
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#151922; --panel2:#1b2029; --line:#262d3a;
+    --text:#e6e9ef; --dim:#98a2b3; --accent:#7c9cff; --accent2:#5ee0c0;
+    --warn:#ffb454; --err:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    display:flex;justify-content:center;padding:40px 20px 80px}
+  .wrap{width:100%;max-width:700px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
+  .sub{color:var(--dim);font-size:14px;margin:0 0 28px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px;margin-bottom:16px}
+
+  /* drop zone */
+  #drop{border:2px dashed var(--line);border-radius:16px;padding:52px 24px;
+    text-align:center;cursor:pointer;transition:.18s;background:var(--panel)}
+  #drop:hover{border-color:#3a4557;background:var(--panel2)}
+  #drop.hot{border-color:var(--accent);background:#1a2130;transform:scale(1.006)}
+  #drop .big{font-size:17px;font-weight:600;margin-bottom:6px}
+  #drop .small{color:var(--dim);font-size:13px}
+  .icon{font-size:34px;margin-bottom:12px;opacity:.85}
+
+  .row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;
+    padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .row:last-child{border-bottom:0}
+  .row .k{color:var(--dim)}
+  .row .v{font-variant-numeric:tabular-nums;text-align:right}
+
+  .badge{display:inline-flex;align-items:center;gap:7px;background:#123027;
+    color:var(--accent2);border:1px solid #1d5344;border-radius:8px;
+    padding:9px 13px;font-size:13px;font-weight:600;margin-bottom:14px}
+  .badge.plain{background:var(--panel2);color:var(--dim);border-color:var(--line);
+    font-weight:500}
+
+  label.fld{display:block;margin:18px 0 0}
+  label.fld .lab{display:flex;justify-content:space-between;font-size:13px;
+    margin-bottom:7px}
+  label.fld .lab b{font-weight:600}
+  label.fld .lab span{color:var(--dim);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent);height:22px}
+  .hint{color:var(--dim);font-size:12px;margin-top:5px}
+
+  .modes{display:flex;gap:8px;margin-bottom:4px}
+  .modes button{flex:1;background:var(--panel2);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;padding:11px 10px;
+    cursor:pointer;font-size:13px;font-weight:600;transition:.15s;
+    font-family:inherit}
+  .modes button.on{border-color:var(--accent);background:#1b2338;color:#fff}
+  .modes button:disabled{opacity:.4;cursor:not-allowed}
+  .modes .why{display:block;font-weight:400;color:var(--dim);font-size:11px;
+    margin-top:3px}
+
+  button.go{width:100%;margin-top:22px;background:var(--accent);color:#0b1020;
+    border:0;border-radius:11px;padding:14px;font-size:15px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.15s}
+  button.go:hover{filter:brightness(1.08)}
+  button.go:disabled{opacity:.45;cursor:not-allowed}
+  button.ghost{background:transparent;color:var(--dim);border:1px solid var(--line);
+    border-radius:9px;padding:9px 14px;cursor:pointer;font-size:13px;
+    font-family:inherit}
+  button.ghost:hover{color:var(--text);border-color:#3a4557}
+
+  .bar{height:7px;background:var(--panel2);border-radius:99px;overflow:hidden;
+    margin:14px 0 9px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+    width:0;transition:width .3s ease}
+  .stat{display:flex;justify-content:space-between;font-size:13px;color:var(--dim)}
+
+  audio{width:100%;margin-top:9px}
+  .ab{display:flex;gap:8px;margin-bottom:6px}
+  .ab button{flex:1;background:var(--panel2);border:1px solid var(--line);
+    color:var(--dim);border-radius:9px;padding:9px;cursor:pointer;font-size:13px;
+    font-weight:600;font-family:inherit}
+  .ab button.on{border-color:var(--accent);color:#fff;background:#1b2338}
+
+  .dl{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .dl a{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    text-decoration:none;border-radius:9px;padding:10px 14px;font-size:13px;
+    font-weight:600}
+  .dl a:hover{border-color:var(--accent)}
+
+  .note{background:#2a2312;border:1px solid #4a3c17;color:#e9d5a8;
+    border-radius:10px;padding:12px 14px;font-size:13px;margin-top:16px}
+  .errbox{background:#2a1414;border:1px solid #4a1f1f;color:#ffc9c9;
+    border-radius:10px;padding:12px 14px;font-size:13px;
+    white-space:pre-wrap;word-break:break-word}
+  .hide{display:none!important}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.07em;
+    color:var(--dim);margin:0 0 12px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>8D Audio</h1>
+  <p class="sub">Drop a track or a recording. Runs entirely on this Mac.</p>
+
+  <!-- STEP 1 -->
+  <div id="drop">
+    <div class="icon">🎧</div>
+    <div class="big">Drop an audio or video file</div>
+    <div class="small">wav · mp3 · m4a · flac · aiff · mov · mp4 &nbsp;·&nbsp; or click to browse</div>
+    <input type="file" id="pick" class="hide" accept="audio/*,video/*">
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="setup" class="card hide">
+    <div id="badge"></div>
+    <div id="meta"></div>
+
+    <div id="modeWrap" style="margin-top:18px">
+      <h2 style="margin-bottom:9px">Method</h2>
+      <div class="modes">
+        <button id="mAmbi" data-m="ambisonic">Rotate sound field
+          <span class="why">real room, real height</span></button>
+        <button id="mStereo" data-m="stereo">Orbit a mono sum
+          <span class="why">works on any file</span></button>
+      </div>
+    </div>
+
+    <label class="fld">
+      <span class="lab"><b>Rotation speed</b><span id="vPeriod">12s</span></span>
+      <input type="range" id="period" min="4" max="30" step="1" value="12">
+      <span class="hint">Seconds per full circle. Under 6s tends to feel queasy.</span>
+    </label>
+
+    <div id="stereoOpts">
+      <label class="fld">
+        <span class="lab"><b>Keep bass centered below</b><span id="vBass">120 Hz</span></span>
+        <input type="range" id="bass" min="40" max="300" step="10" value="120">
+        <span class="hint">Orbiting sub-bass sounds broken. This pins it in place.</span>
+      </label>
+      <label class="fld">
+        <span class="lab"><b>Reverb</b><span id="vRev">25%</span></span>
+        <input type="range" id="reverb" min="0" max="70" step="5" value="25">
+        <span class="hint">Puts the movement in a room. Lower it if the take is already live.</span>
+      </label>
+    </div>
+
+    <div id="ambiOpts" class="hide">
+      <label class="fld">
+        <span class="lab"><b>Directional focus</b><span id="vWidth">1.00</span></span>
+        <input type="range" id="width" min="0.4" max="1.4" step="0.05" value="1">
+        <span class="hint">Higher is more sharply localized, lower is more diffuse and roomy.</span>
+      </label>
+    </div>
+
+    <label class="fld hide" id="muxWrap">
+      <span class="lab"><b>Also write a video with the new audio</b></span>
+      <input type="checkbox" id="mux" style="width:auto;accent-color:var(--accent)">
+      <span class="hint">Copies the original video track, no re-encode.</span>
+    </label>
+
+    <button class="go" id="go">Create 8D track</button>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="prog" class="card hide">
+    <h2>Working</h2>
+    <div class="bar"><i id="fill"></i></div>
+    <div class="stat"><span id="pmsg">Starting</span><span id="ppct">0%</span></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div id="done" class="card hide">
+    <h2>Result</h2>
+    <div style="color:var(--dim);font-size:13px;margin:-4px 0 12px" id="modeUsed"></div>
+    <div id="noteBox" class="note hide"></div>
+    <div class="ab">
+      <button id="tab8d" class="on">8D version</button>
+      <button id="tabOrig">Original</button>
+    </div>
+    <audio id="player" controls preload="none"></audio>
+    <div class="dl" id="dls"></div>
+    <div class="note">Headphones only. On speakers this collapses back to ordinary stereo, which is expected.</div>
+    <div style="margin-top:16px"><button class="ghost" id="again">Process another file</button></div>
+  </div>
+
+  <div id="err" class="card hide">
+    <h2 style="color:var(--err)">Failed</h2>
+    <div class="errbox" id="errtxt"></div>
+    <div style="margin-top:14px"><button class="ghost" id="again2">Start over</button></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let up = null, jid = null, poll = null, mode = "stereo";
+
+const fmtT = s => {
+  s = Math.round(s||0);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+};
+const fmtB = b => b > 1e9 ? (b/1e9).toFixed(2)+" GB"
+                : b > 1e6 ? (b/1e6).toFixed(1)+" MB"
+                : (b/1e3).toFixed(0)+" KB";
+
+/* ---------- drag and drop ---------- */
+const drop = $("#drop");
+drop.onclick = () => $("#pick").click();
+$("#pick").onchange = e => e.target.files[0] && send(e.target.files[0]);
+["dragenter","dragover"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("hot"); }));
+["dragleave","drop"].forEach(ev =>
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("hot"); }));
+drop.addEventListener("drop", e => {
+  const f = e.dataTransfer.files[0];
+  if (f) send(f);
+});
+// keep the browser from navigating if a file misses the zone
+["dragover","drop"].forEach(ev =>
+  window.addEventListener(ev, e => e.preventDefault()));
+
+/* ---------- upload ---------- */
+async function send(file){
+  show("upload");
+  drop.querySelector(".big").textContent = "Reading " + file.name;
+  drop.querySelector(".small").textContent = fmtB(file.size) + " · analyzing";
+  const fd = new FormData();
+  fd.append("file", file);
+  try{
+    const r = await fetch("/upload", {method:"POST", body:fd});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || "upload failed");
+    up = j;
+    render(j);
+  }catch(e){ fail(e.message); }
+}
+
+function render(j){
+  dropIdle();
+  const a = j.audio[0] || {};
+  const rows = [
+    ["Length", fmtT(j.duration)],
+    ["Size", fmtB(j.size)],
+    ["Audio", `${a.codec||"?"} · ${a.channels||"?"} ch · ${(a.sample_rate/1000||0).toFixed(1)} kHz`],
+  ];
+  if(a.bit_rate) rows.push(["Bitrate", Math.round(a.bit_rate/1000)+" kbps"]);
+  if(j.video.length) rows.push(["Video", `${j.video[0].width}×${j.video[0].height}`]);
+  $("#meta").innerHTML = rows.map(([k,v]) =>
+    `<div class="row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+
+  if(j.has_ambisonic){
+    $("#badge").className = "badge";
+    $("#badge").innerHTML = "◈ Spatial Audio detected — 4-channel ambisonic";
+    setMode("ambisonic");
+    $("#mAmbi").disabled = false;
+    $("#period").value = 14;
+  }else{
+    $("#badge").className = "badge plain";
+    $("#badge").textContent = "Standard audio — no spatial track in this file";
+    setMode("stereo");
+    $("#mAmbi").disabled = true;
+    $("#period").value = 12;
+  }
+  syncLabels();
+  $("#muxWrap").classList.toggle("hide", !j.has_video);
+  show("setup");
+}
+
+/* ---------- controls ---------- */
+document.querySelectorAll(".modes button").forEach(b =>
+  b.onclick = () => { if(!b.disabled) setMode(b.dataset.m); });
+function setMode(m){
+  mode = m;
+  $("#mAmbi").classList.toggle("on", m === "ambisonic");
+  $("#mStereo").classList.toggle("on", m === "stereo");
+  $("#stereoOpts").classList.toggle("hide", m !== "stereo");
+  $("#ambiOpts").classList.toggle("hide", m !== "ambisonic");
+}
+const syncLabels = () => {
+  $("#vPeriod").textContent = $("#period").value + "s";
+  $("#vBass").textContent = $("#bass").value + " Hz";
+  $("#vRev").textContent = $("#reverb").value + "%";
+  $("#vWidth").textContent = (+$("#width").value).toFixed(2);
+};
+["period","bass","reverb","width"].forEach(id => $("#"+id).oninput = syncLabels);
+
+/* ---------- process ---------- */
+$("#go").onclick = async () => {
+  $("#go").disabled = true;
+  const fd = new FormData();
+  fd.append("upload_id", up.upload_id);
+  fd.append("mode", mode);
+  fd.append("period", $("#period").value);
+  fd.append("bass", $("#bass").value);
+  fd.append("reverb", (+$("#reverb").value/100).toFixed(2));
+  fd.append("width", $("#width").value);
+  fd.append("mux", $("#mux").checked ? "true" : "false");
+  try{
+    const r = await fetch("/process", {method:"POST", body:fd});
+    const j = await r.json();
+    if(!r.ok) throw new Error(j.detail || "could not start");
+    jid = j.job_id;
+    show("prog");
+    poll = setInterval(tick, 500);
+    tick();
+  }catch(e){ $("#go").disabled = false; fail(e.message); }
+};
+
+async function tick(){
+  try{
+    const r = await fetch("/status/"+jid);
+    const s = await r.json();
+    const pct = Math.round((s.progress||0)*100);
+    $("#fill").style.width = pct + "%";
+    $("#ppct").textContent = pct + "%";
+    $("#pmsg").textContent = s.message || s.stage;
+    if(s.stage === "done"){ clearInterval(poll); finish(s); }
+    if(s.stage === "error"){ clearInterval(poll); fail(s.message, s.detail); }
+  }catch(e){ /* keep polling through transient errors */ }
+}
+
+function finish(s){
+  const eightD = s.outputs.find(n => n.endsWith(".mp3")) || s.outputs[0];
+  const orig = up.preview;
+  const base = "/file/" + jid + "/";
+  $("#player").src = base + eightD;
+  $("#tab8d").onclick = () => {
+    $("#player").src = base + eightD;
+    $("#tab8d").classList.add("on"); $("#tabOrig").classList.remove("on");
+  };
+  $("#tabOrig").onclick = () => {
+    if(!orig) return;
+    $("#player").src = base + orig;
+    $("#tabOrig").classList.add("on"); $("#tab8d").classList.remove("on");
+  };
+  $("#tabOrig").style.display = orig ? "" : "none";
+  const label = n => n.endsWith(".wav") ? "WAV (24-bit)"
+                : n.endsWith(".mp3") ? "MP3 (320k)"
+                : n.endsWith(".mp4") ? "Video + 8D audio" : n;
+  $("#dls").innerHTML = s.outputs.map(n =>
+    `<a href="${base+n}" download>↓ ${label(n)}</a>`).join("");
+  const nb = $("#noteBox");
+  if(s.note){ nb.textContent = s.note; nb.classList.remove("hide"); }
+  else nb.classList.add("hide");
+  $("#modeUsed").textContent = s.mode === "ambisonic"
+    ? "Rotated the recorded sound field"
+    : "Orbited a mono sum";
+  show("done");
+}
+
+/* ---------- plumbing ---------- */
+function show(step){
+  const on = {
+    upload: ["#drop"], setup: ["#drop","#setup"],
+    prog: ["#prog"], done: ["#done"], err: ["#err"],
+  }[step] || ["#drop"];
+  ["#drop","#setup","#prog","#done","#err"].forEach(s =>
+    $(s).classList.toggle("hide", !on.includes(s)));
+}
+function dropIdle(){
+  drop.querySelector(".big").textContent = "Drop an audio or video file";
+  drop.querySelector(".small").innerHTML =
+    "wav · mp3 · m4a · flac · aiff · mov · mp4 &nbsp;·&nbsp; or click to browse";
+}
+function fail(msg, detail){
+  $("#errtxt").textContent = detail ? msg + "\n\n" + detail : msg;
+  show("err");
+}
+const restart = () => {
+  clearInterval(poll); up = jid = null;
+  $("#go").disabled = false;
+  $("#player").pause(); $("#player").src = "";
+  dropIdle();
+  $("#pick").value = "";
+  show("upload");
+};
+$("#again").onclick = restart;
+$("#again2").onclick = restart;
+syncLabels();
+</script>
+</body>
+</html>

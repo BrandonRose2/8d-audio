@@ -1,0 +1,6 @@
+numpy>=1.26
+soundfile>=0.12
+h5py>=3.10
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
