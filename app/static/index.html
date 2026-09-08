@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>8D Audio</title>
+<link rel="icon" href="data:,">
 <style>
   :root{
     --bg:#0d0f14; --panel:#151922; --panel2:#1b2029; --line:#262d3a;
@@ -195,6 +196,13 @@
 const $ = s => document.querySelector(s);
 let up = null, jid = null, poll = null, mode = "stereo";
 
+// When the server runs with EIGHTD_TOKEN, every request needs the secret,
+// not just the initial page load. Carry it through from the page URL.
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const url = p => TOKEN
+  ? p + (p.includes("?") ? "&" : "?") + "t=" + encodeURIComponent(TOKEN)
+  : p;
+
 const fmtT = s => {
   s = Math.round(s||0);
   return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
@@ -227,7 +235,7 @@ async function send(file){
   const fd = new FormData();
   fd.append("file", file);
   try{
-    const r = await fetch("/upload", {method:"POST", body:fd});
+    const r = await fetch(url("/upload"), {method:"POST", body:fd});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || "upload failed");
     up = j;
@@ -296,7 +304,7 @@ $("#go").onclick = async () => {
   fd.append("width", $("#width").value);
   fd.append("mux", $("#mux").checked ? "true" : "false");
   try{
-    const r = await fetch("/process", {method:"POST", body:fd});
+    const r = await fetch(url("/process"), {method:"POST", body:fd});
     const j = await r.json();
     if(!r.ok) throw new Error(j.detail || "could not start");
     jid = j.job_id;
@@ -308,7 +316,7 @@ $("#go").onclick = async () => {
 
 async function tick(){
   try{
-    const r = await fetch("/status/"+jid);
+    const r = await fetch(url("/status/"+jid));
     const s = await r.json();
     const pct = Math.round((s.progress||0)*100);
     $("#fill").style.width = pct + "%";
@@ -323,14 +331,14 @@ function finish(s){
   const eightD = s.outputs.find(n => n.endsWith(".mp3")) || s.outputs[0];
   const orig = up.preview;
   const base = "/file/" + jid + "/";
-  $("#player").src = base + eightD;
+  $("#player").src = url(base + eightD);
   $("#tab8d").onclick = () => {
-    $("#player").src = base + eightD;
+    $("#player").src = url(base + eightD);
     $("#tab8d").classList.add("on"); $("#tabOrig").classList.remove("on");
   };
   $("#tabOrig").onclick = () => {
     if(!orig) return;
-    $("#player").src = base + orig;
+    $("#player").src = url(base + orig);
     $("#tabOrig").classList.add("on"); $("#tab8d").classList.remove("on");
   };
   $("#tabOrig").style.display = orig ? "" : "none";
@@ -338,7 +346,7 @@ function finish(s){
                 : n.endsWith(".mp3") ? "MP3 (320k)"
                 : n.endsWith(".mp4") ? "Video + 8D audio" : n;
   $("#dls").innerHTML = s.outputs.map(n =>
-    `<a href="${base+n}" download>↓ ${label(n)}</a>`).join("");
+    `<a href="${url(base+n)}" download>↓ ${label(n)}</a>`).join("");
   const nb = $("#noteBox");
   if(s.note){ nb.textContent = s.note; nb.classList.remove("hide"); }
   else nb.classList.add("hide");
