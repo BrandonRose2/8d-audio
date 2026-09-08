@@ -1,0 +1,29 @@
+#!/bin/bash
+# Serve the 8D app on this machine's Tailscale address only.
+# Reachable from your other tailnet devices; invisible to the local network.
+cd "$(dirname "$0")" || exit 1
+
+TS=/Applications/Tailscale.app/Contents/MacOS/Tailscale
+[ -x "$TS" ] || TS=$(command -v tailscale) || { echo "Tailscale not found."; exit 1; }
+
+TSIP=$("$TS" ip -4 2>/dev/null | head -1)
+[ -n "$TSIP" ] || { echo "Not connected to a tailnet. Open Tailscale and sign in."; exit 1; }
+
+if [ ! -f .tailnet-token ]; then
+  openssl rand -hex 20 > .tailnet-token
+  chmod 600 .tailnet-token
+  echo "Generated a new access token in .tailnet-token"
+fi
+TOKEN=$(cat .tailnet-token)
+
+echo
+echo "  8D Audio on your tailnet:"
+echo "  http://$TSIP:8765/?t=$TOKEN"
+echo
+echo "  Bound to the Tailscale interface only, so the local network cannot see it."
+echo "  Ctrl-C to stop."
+echo
+cd app || exit 1
+export EIGHTD_TOKEN="$TOKEN"
+exec ../.venv/bin/python -m uvicorn server:app \
+  --host "$TSIP" --port "${PORT:-8765}"

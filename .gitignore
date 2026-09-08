@@ -27,3 +27,4 @@ piano/
 .DS_Store
 make8d.py
 gen_demo.py
+.tailnet-token
